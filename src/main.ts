@@ -14,7 +14,7 @@ async function bootstrap() {
     }),
   );
   app.useGlobalInterceptors(new ClassSerializerInterceptor(app.get(Reflector)));
-
+  app.setGlobalPrefix('api');
   const config = new DocumentBuilder()
     .setTitle('API DOCUMENTATION')
     .setDescription('API')
@@ -23,6 +23,7 @@ async function bootstrap() {
     .build();
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api_doc', app, document);
+  
   app.use(helmet());
   app.enableCors({
     origin:['http://localhost:3011'],
