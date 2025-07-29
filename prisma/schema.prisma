@@ -4,28 +4,679 @@ generator client {
 
 datasource db {
   provider = "mysql"
-  url      = env("DATABASE_URL")
+  // url      = env("DATABASE_URL")
+  url      = "mysql://root:123456@localhost:3306/na_sparepart"
 }
 
-/// user model
-model User {
-  id           String        @id @default(uuid())
-  clientId     String        @unique
-  clientSecret String?
-  token        AccessToken?
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
-
-  @@map("users")
+model basbaoyang {
+  id        Int      @id @default(autoincrement())
+  pk_station String?  @db.VarChar(36)
+  xh        Int?
+  vname     String?  @db.VarChar(255)
+  span      Int?
+  dtold     Int?
+  bclose    Boolean?
+  dtold2    DateTime?
+  oper      String?  @db.VarChar(255)
+  remark    String?  @db.VarChar(255)
 }
 
-model AccessToken {
-  id        String   @id @default(uuid())
-  token     String 
-  userId    String   @unique
-  user      User     @relation(fields: [userId], references: [id])
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@map("access_tokens")
+model bascan {
+  pk                  String   @id @db.VarChar(36)
+  pxxh                Int?
+  pk_station          String?  @db.VarChar(36)
+  CanNo               Int?
+  title               String?  @db.VarChar(255)
+  oper_date           DateTime?
+  remark              String?  @db.VarChar(255)
+  F11                 Decimal? @db.Decimal(18, 4)
+  F12                 Decimal? @db.Decimal(18, 4)
+  F13                 Decimal? @db.Decimal(18, 4)
+  F14                 Decimal? @db.Decimal(18, 4)
+  F15                 Decimal? @db.Decimal(18, 4)
+  F16                 Decimal? @db.Decimal(18, 4)
+  F17                 Decimal? @db.Decimal(18, 4)
+  F18                 Decimal? @db.Decimal(18, 4)
+  F19                 Decimal? @db.Decimal(18, 4)
+  F21                 Decimal? @db.Decimal(18, 4)
+  F22                 Decimal? @db.Decimal(18, 4)
+  F23                 Decimal? @db.Decimal(18, 4)
+  F24                 Decimal? @db.Decimal(18, 4)
+  F25                 Decimal? @db.Decimal(18, 4)
+  F26                 Decimal? @db.Decimal(18, 4)
+  F27                 Decimal? @db.Decimal(18, 4)
+  F28                 Decimal? @db.Decimal(18, 4)
+  F29                 Decimal? @db.Decimal(18, 4)
+  F31                 Decimal? @db.Decimal(18, 4)
+  F32                 Decimal? @db.Decimal(18, 4)
+  F33                 Decimal? @db.Decimal(18, 4)
+  F34                 Decimal? @db.Decimal(18, 4)
+  F35                 Decimal? @db.Decimal(18, 4)
+  F36                 Decimal? @db.Decimal(18, 4)
+  F37                 Decimal? @db.Decimal(18, 4)
+  F38                 Decimal? @db.Decimal(18, 4)
+  F39                 Decimal? @db.Decimal(18, 4)
+  F41                 Decimal? @db.Decimal(18, 4)
+  F42                 Decimal? @db.Decimal(18, 4)
+  F43                 Decimal? @db.Decimal(18, 4)
+  F44                 Decimal? @db.Decimal(18, 4)
+  F45                 Decimal? @db.Decimal(18, 4)
+  F46                 Decimal? @db.Decimal(18, 4)
+  F47                 Decimal? @db.Decimal(18, 4)
+  F48                 Decimal? @db.Decimal(18, 4)
+  F49                 Decimal? @db.Decimal(18, 4)
+  F51                 Decimal? @db.Decimal(18, 4)
+  F52                 Decimal? @db.Decimal(18, 4)
+  F53                 Decimal? @db.Decimal(18, 4)
+  F54                 Decimal? @db.Decimal(18, 4)
+  F55                 Decimal? @db.Decimal(18, 4)
+  F56                 Decimal? @db.Decimal(18, 4)
+  F57                 Decimal? @db.Decimal(18, 4)
+  F58                 Decimal? @db.Decimal(18, 4)
+  F59                 Decimal? @db.Decimal(18, 4)
+  F61                 Decimal? @db.Decimal(18, 4)
+  F62                 Decimal? @db.Decimal(18, 4)
+  F63                 Decimal? @db.Decimal(18, 4)
+  F64                 Decimal? @db.Decimal(18, 4)
+  F65                 Decimal? @db.Decimal(18, 4)
+  F66                 Decimal? @db.Decimal(18, 4)
+  F67                 Decimal? @db.Decimal(18, 4)
+  F68                 Decimal? @db.Decimal(18, 4)
+  F69                 Decimal? @db.Decimal(18, 4)
+  oldpk               String?  @db.VarChar(36)
+  oper                String?  @db.VarChar(255)
+  FallOrderCan        Int?
+  FallOrder_addr      Int?
+  ok_addr             Int?
+  ok_index            Int?
+  no_addr             Int?
+  compensate          Boolean?
+  Total_addr          Int?
+  compensate_addr     Int?
+  compensate_index    Int?
+  errAlarm            Decimal? @db.Decimal(18, 4)
+  QtyFmt              String?  @db.VarChar(45)
+  fl                  Int?
+  fl_addr             Int?
+  flfs                Int?
+  flfs_addr           Int?
+  Capacity            Int?
+  Mult                Decimal? @db.Decimal(18, 4)
+  Visible             Boolean?
+  kindforLq           Int?
+  acceptability_addr  Int?
+  acceptability_index Int?
+  bbackup             Boolean?
 }
+
+model basconfig {
+  id        BigInt   @id @default(autoincrement())
+  pk_station String?  @db.VarChar(36)
+  title     String?  @db.VarChar(2000)
+  strval    String?  @db.VarChar(1255)
+  intval    Int?
+  doubleval Decimal? @db.Decimal(18, 4)
+  bitval    Boolean?
+}
+
+model basdic {
+  pk         String   @id @db.VarChar(36)
+  pxxh       Int?
+  pk_station String?  @db.VarChar(36)
+  kind       String?  @db.VarChar(255)
+  title      String?  @db.VarChar(255)
+  oper_date  DateTime?
+  remark     String?  @db.VarChar(255)
+}
+
+
+model bashint {
+  id         Int     @id @default(autoincrement())
+  pk_station String? @db.VarChar(36)
+  xh         Int?
+  vadd       Int?
+  vindex     Int?
+  vname      String? @db.VarChar(255)
+  vtype      String? @db.VarChar(50)
+  downvalue  Boolean?
+  portname   String? @db.VarChar(255)
+  vkind      Int?
+  bhide      Boolean?
+  rsqwarn    Boolean?
+}
+
+model bashistory {
+  pk         String   @id @db.VarChar(36)
+  pxxh       Int?
+  pk_station String?  @db.VarChar(36)
+  title      String?  @db.VarChar(255)
+  oper_date  DateTime?
+  remark     String?  @db.VarChar(255)
+  oper       String?  @db.VarChar(255)
+  balways    Boolean?
+}
+
+model bashistory_tmp {
+  pk         String   @id @db.VarChar(36)
+  pxxh       Int?
+  pk_station String?  @db.VarChar(36)
+  title      String?  @db.VarChar(255)
+  oper_date  DateTime?
+  remark     String?  @db.VarChar(255)
+  oper       String?  @db.VarChar(255)
+  balways    Boolean?
+}
+
+model basrecipe {
+  pk              String   @id @db.VarChar(36)
+  pxxh            Int?
+  pk_station      String?  @db.VarChar(36)
+  title           String?  @db.VarChar(255)
+  kind            String?  @db.VarChar(50)
+  mixTime         Int?
+  oper_date       DateTime?
+  remark          String?  @db.VarChar(255)
+  flagsj          Boolean?
+  oper            String?  @db.VarChar(255)
+  oldpk           String?  @db.VarChar(36)
+  status          Int?
+  lqtotal         Decimal? @db.Decimal(18, 2)
+  plsav           Boolean?
+  fjj1_0          Decimal? @db.Decimal(18, 2)
+  fjj1_1          Decimal? @db.Decimal(18, 2)
+  fjj1_2          Decimal? @db.Decimal(18, 2)
+  fjj1_3          Decimal? @db.Decimal(18, 2)
+  fjj1_4          Decimal? @db.Decimal(18, 2)
+  fjj1_5          Decimal? @db.Decimal(18, 2)
+  fjj1_6          Decimal? @db.Decimal(18, 2)
+  fjj1_7          Decimal? @db.Decimal(18, 2)
+  intensityLevel  String?  @db.VarChar(45)
+  ksd             String?  @db.VarChar(45)
+  kzd             String?  @db.VarChar(45)
+  tld             String?  @db.VarChar(45)
+  sljdj           String?  @db.VarChar(45)
+  sszdlj          String?  @db.VarChar(45)
+  sjb             Decimal? @db.Decimal(18, 4)
+  sl              Decimal? @db.Decimal(18, 4)
+  bgmd            Decimal? @db.Decimal(18, 4)
+  OnOrder         Decimal? @db.Decimal(18, 4)
+}
+
+model basrecipe_d {
+  pk         String   @id @db.VarChar(36)
+  pxxh       Int?
+  pk_m       String?  @db.VarChar(36)
+  pk_Storage String?  @db.VarChar(36)
+  qty        Decimal? @db.Decimal(18, 4)
+  remark     String?  @db.VarChar(255)
+}
+
+
+// model basrightfrm {
+//   title   String? @db.VarChar(255)
+//   disname String? @db.VarChar(255)
+
+//   @@map("basrightfrm")
+// }
+
+// model basrightfunc {
+//   frmname String? @db.VarChar(255)
+//   title   String? @db.VarChar(255)
+//   disname String? @db.VarChar(255)
+
+//   @@map("basrightfunc")
+// }
+
+// model basrightfuncclass {
+//   title String? @db.VarChar(2000)
+
+//   @@map("basrightfuncclass")
+// }
+
+model basstation {
+  pk           String   @id @db.VarChar(36)
+  pxxh         Int?
+  code         String?  @db.VarChar(50)
+  title        String?  @db.VarChar(255)
+  title_print  String?  @db.VarChar(255)
+  version      String?  @db.VarChar(50)
+  qty          Float?
+  build_date   DateTime?
+  oper_date    DateTime?
+  remark       String?  @db.VarChar(255)
+  binit        Boolean?
+}
+
+model basstorage {
+  pk               String   @id @db.VarChar(36)
+  pxxh             Int?
+  pk_station       String?  @db.VarChar(36)
+  pk_can           String?  @db.VarChar(36)
+  Materialtitle    String?  @db.VarChar(255)
+  Materialkind     String?  @db.VarChar(50)
+  MaterialVersion  String?  @db.VarChar(255)
+  Discharge        Int?
+  QtyRecipe        Decimal? @db.Decimal(18, 4)
+  QtyCoarse        Decimal? @db.Decimal(18, 4)
+  QtySlow          Decimal? @db.Decimal(18, 4)
+  QtyFinal         Decimal? @db.Decimal(18, 4)
+  QtyActual        Decimal? @db.Decimal(18, 4)
+  QtyFormat        String?  @db.VarChar(50)
+  FallOrder        Int?
+  DelayCheck       Int?
+  oper_date        DateTime?
+  remark           String?  @db.VarChar(255)
+  oldpk            String?  @db.VarChar(36)
+  oper             String?  @db.VarChar(255)
+  status           Int?
+  RateCC           Decimal? @db.Decimal(18, 4)
+  StopAdd          Int?
+  StopIndex        Int?
+  lq_final_read    Int?
+  lq_final_write   Int?
+  lq_actual_read   Int?
+  lq_Slow_read     Int?
+  lq_Coarse_read   Int?
+  lq_mdong_read    Int?
+  lq_errpl_read    Int?
+  errpl            Int?
+  lq_gljc2_read    Int?
+  gljc2            Int?
+  lq_glmd2_read    Int?
+  glmd2            Int?
+  Coarseb          Int?
+  CoarsebAddr      Int?
+  CoarsebIndex     Int?
+  plSpan           Int?
+  plSpanAddr       Int?
+  DelayCheckAddr   Int?
+  FallOrderAddr    Int?
+  Qtyhsl           Decimal? @db.Decimal(18, 4)
+  DisplayOrder     Int?
+  Inventory        Decimal? @db.Decimal(18, 4) @default("0.0000")
+  Absorption       Decimal? @db.Decimal(18, 4) @default("0.0000")
+}
+
+
+model basuser {
+  pk         String   @id @db.VarChar(36)
+  pxxh       Int?
+  pk_station String?  @db.VarChar(36)
+  bsa        Boolean?
+  title      String?  @db.VarChar(50)
+  pass       String?  @db.VarChar(255)
+  status     Int?
+  oper_date  DateTime?
+  remark     String?  @db.VarChar(255)
+}
+
+model langfrm {
+  title    String   @id @db.VarChar(255)
+  hanzi    String?  @db.VarChar(255)
+  waiyu    String?  @db.VarChar(1000)
+  operdate DateTime?
+}
+
+model langfrmd {
+  title        String   @id @db.VarChar(255)
+  strval       String?  @db.VarChar(255)
+  intval       Int?
+  doubleval    Decimal? @db.Decimal(18, 4)
+  bitval       Boolean?
+  buse         Boolean?
+  operdate     DateTime?
+  l            Int?
+  t            Int?
+  w            Int?
+  h            Int?
+  transparent  Boolean?
+  wordwrap     Boolean?
+  color        String?  @db.VarChar(45)
+  font         String?  @db.VarChar(100)
+  alignment    Int?
+  ol           Int?
+  ot           Int?
+  ow           Int?
+  oh           Int?
+  otransparent Boolean?
+  owordwrap    Boolean?
+  ocolor       String?  @db.VarChar(45)
+  ofont        String?  @db.VarChar(100)
+  oalignment   Int?
+}
+
+model langopt {
+  aname String @id @db.VarChar(255)
+}
+
+model langunt {
+  hanzi  String   @id @db.VarChar(255)
+  waiyu  String?  @db.VarChar(2000)
+}
+
+// model prd_cj {
+//   pk_station String?  @db.VarChar(36)
+//   oper_date  DateTime?
+//   f6         Decimal? @db.Decimal(18, 4)
+//   f7         Decimal? @db.Decimal(18, 4)
+//   f8         Decimal? @db.Decimal(18, 4)
+//   f9         Decimal? @db.Decimal(18, 4)
+//   f10        Decimal? @db.Decimal(18, 4)
+//   f11        Decimal? @db.Decimal(18, 4)
+//   f12        Decimal? @db.Decimal(18, 4)
+//   f13        Decimal? @db.Decimal(18, 4)
+
+//   @@map("prd_cj")
+// }
+
+// model prd_hand {
+//   pk_station      String?  @db.VarChar(36)
+//   pk_Storage      String?  @db.VarChar(36)
+//   Materialtitle   String?  @db.VarChar(255)
+//   Materialkind    String?  @db.VarChar(50)
+//   MaterialVersion String?  @db.VarChar(255)
+//   qty_hand        Decimal? @db.Decimal(18, 4)
+//   oper_date       DateTime?
+//   remark          String?  @db.VarChar(255)
+//   oper            String?  @db.VarChar(255)
+//   prdbill_pk      String?  @db.VarChar(36)
+//   item_id         Decimal? @db.Decimal(18, 4)
+//   operkind        String?  @db.VarChar(45)
+
+//   @@map("prd_hand")
+// }
+
+
+model prdbill {
+  pk              String   @id @db.VarChar(36)
+  pxxh            Int?
+  pk_station      String?  @db.VarChar(36)
+  pk_xsBill       String?  @db.VarChar(36)
+  pk_recipe       String?  @db.VarChar(36)
+  qty             Decimal? @db.Decimal(18, 4)
+  itemno          Int?
+  itemno_now      Int?
+  each_qty        Decimal? @db.Decimal(18, 4)
+  oper_date       DateTime?
+  remark          String?  @db.VarChar(255)
+  status          Int?
+  oper            String?  @db.VarChar(255)
+  bprint          Boolean?
+  driver          String?  @db.VarChar(255)
+  cheno           String?  @db.VarChar(50)
+  prddate         DateTime?
+  acode           String?  @db.VarChar(50)
+  addr            String?  @db.VarChar(255)
+  addr_distance   Decimal? @db.Decimal(18, 4)
+  telphone        String?  @db.VarChar(255)
+  recipe_title    String?  @db.VarChar(255)
+  lqprojectname   String?  @db.VarChar(255)
+  lqbatchNo       String?  @db.VarChar(255)
+  lqqty           Decimal? @db.Decimal(18, 4)
+  jbspan          BigInt?
+  wdcl            Decimal? @db.Decimal(18, 4)
+  wdyq            Decimal? @db.Decimal(18, 4)
+  fjj1_0          Decimal? @db.Decimal(18, 2)
+  fjj1_1          Decimal? @db.Decimal(18, 2)
+  fjj1_2          Decimal? @db.Decimal(18, 2)
+  fjj1_3          Decimal? @db.Decimal(18, 2)
+  fjj1_4          Decimal? @db.Decimal(18, 2)
+  fjj1_0_copy1    Decimal? @db.Decimal(18, 2)
+  fjj1_6          Decimal? @db.Decimal(18, 2)
+  fjj1_7          Decimal? @db.Decimal(18, 2)
+  intensityLevel  String?  @db.VarChar(45)
+  ksd             String?  @db.VarChar(45)
+  kzd             String?  @db.VarChar(45)
+  tld             String?  @db.VarChar(45)
+  sljdj           String?  @db.VarChar(45)
+  sszdlj          String?  @db.VarChar(45)
+  sjb             Decimal? @db.Decimal(18, 4)
+  sl              Decimal? @db.Decimal(18, 4)
+  bgmd            Decimal? @db.Decimal(18, 4)
+  OnOrder         Decimal? @db.Decimal(18, 4)
+  pk_Customer     String?  @db.VarChar(36)
+  begindate       DateTime?
+  remark2         String?  @db.VarChar(255)
+  remark3         String?  @db.VarChar(255)
+  ProjectCmpy     String?  @db.VarChar(255)
+  ProjectPart     String?  @db.VarChar(100)
+  shipper         String?  @db.VarChar(50)
+  checker         String?  @db.VarChar(50)
+  WorkMethod      String?  @db.VarChar(100)
+  WorkPart        String?  @db.VarChar(100)
+  CementName      String?  @db.VarChar(50)
+  zbv1            String?  @db.VarChar(255)
+  zbv2            String?  @db.VarChar(255)
+  zbv3            String?  @db.VarChar(255)
+  zbf1            Decimal? @db.Decimal(18, 4)
+  zbf2            Decimal? @db.Decimal(18, 4)
+  zbf3            Decimal? @db.Decimal(18, 4)
+  zbi1            Int?
+  zbi2            Int?
+  zbi3            Int?
+  zbb1            Boolean?
+  zbb2            Boolean?
+  zbb3            Boolean?
+  bautobell       Boolean?
+  qty_now         Decimal? @db.Decimal(18, 4)
+  qty_che         Int?
+}
+
+model prdbill_his {
+  pk              String   @id @db.VarChar(36)
+  pxxh            Int?
+  pk_station      String?  @db.VarChar(36)
+  pk_xsBill       String?  @db.VarChar(36)
+  pk_recipe       String?  @db.VarChar(36)
+  qty             Decimal? @db.Decimal(18, 4)
+  itemno          Int?
+  itemno_now      Int?
+  each_qty        Decimal? @db.Decimal(18, 4)
+  oper_date       DateTime?
+  remark          String?  @db.VarChar(255)
+  status          Int?
+  oper            String?  @db.VarChar(255)
+  bprint          Boolean?
+  driver          String?  @db.VarChar(255)
+  cheno           String?  @db.VarChar(50)
+  prddate         DateTime?
+  acode           String?  @db.VarChar(50)
+  addr            String?  @db.VarChar(255)
+  addr_distance   Decimal? @db.Decimal(18, 4)
+  telphone        String?  @db.VarChar(255)
+  recipe_title    String?  @db.VarChar(255)
+  lqprojectname   String?  @db.VarChar(255)
+  lqbatchNo       String?  @db.VarChar(255)
+  lqqty           Decimal? @db.Decimal(18, 4)
+  jbspan          BigInt?
+  wdcl            Decimal? @db.Decimal(18, 4)
+  wdyq            Decimal? @db.Decimal(18, 4)
+  fjj1_0          Decimal? @db.Decimal(18, 2)
+  fjj1_1          Decimal? @db.Decimal(18, 2)
+  fjj1_2          Decimal? @db.Decimal(18, 2)
+  fjj1_3          Decimal? @db.Decimal(18, 2)
+  fjj1_4          Decimal? @db.Decimal(18, 2)
+  fjj1_5          Decimal? @db.Decimal(18, 2)
+  fjj1_6          Decimal? @db.Decimal(18, 2)
+  fjj1_7          Decimal? @db.Decimal(18, 2)
+  intensityLevel  String?  @db.VarChar(45)
+  ksd             String?  @db.VarChar(45)
+  kzd             String?  @db.VarChar(45)
+  tld             String?  @db.VarChar(45)
+  sljdj           String?  @db.VarChar(45)
+  sszdlj          String?  @db.VarChar(45)
+  sjb             Decimal? @db.Decimal(18, 4)
+  sl              Decimal? @db.Decimal(18, 4)
+  bgmd            Decimal? @db.Decimal(18, 4)
+  OnOrder         Decimal? @db.Decimal(18, 4)
+  pk_Customer     String?  @db.VarChar(36)
+  begindate       DateTime?
+  remark2         String?  @db.VarChar(255)
+  remark3         String?  @db.VarChar(255)
+  ProjectCmpy     String?  @db.VarChar(255)
+  ProjectPart     String?  @db.VarChar(100)
+  shipper         String?  @db.VarChar(50)
+  checker         String?  @db.VarChar(50)
+  WorkMethod      String?  @db.VarChar(100)
+  WorkPart        String?  @db.VarChar(100)
+  CementName      String?  @db.VarChar(50)
+  zbv1            String?  @db.VarChar(255)
+  zbv2            String?  @db.VarChar(255)
+  zbv3            String?  @db.VarChar(255)
+  zbf1            Decimal? @db.Decimal(18, 4)
+  zbf2            Decimal? @db.Decimal(18, 4)
+  zbf3            Decimal? @db.Decimal(18, 4)
+  zbi1            Int?
+  zbi2            Int?
+  zbi3            Int?
+  zbb1            Boolean?
+  zbb2            Boolean?
+  zbb3            Boolean?
+  bautobell       Boolean?
+  qty_now         Decimal? @db.Decimal(18, 4)
+  qty_che         Int?
+}
+
+model prdbill_his_rcp {
+  pk_m         String   @id @db.VarChar(36)
+  pk           String   @db.VarChar(36)
+  pxxh         Int?
+  pk_station   String?  @db.VarChar(36)
+  title        String?  @db.VarChar(255)
+  kind         String?  @db.VarChar(50)
+  mixTime      Int?
+  oper_date    DateTime?
+  remark       String?  @db.VarChar(255)
+  flagsj       Boolean?
+  oper         String?  @db.VarChar(255)
+  oldpk        String?  @db.VarChar(36)
+  status       Int?
+  lqtotal      Decimal? @db.Decimal(18, 2)
+  plsav        Boolean?
+  fjj1_0       Decimal? @db.Decimal(18, 2)
+  fjj1_1       Decimal? @db.Decimal(18, 2)
+  fjj1_2       Decimal? @db.Decimal(18, 2)
+  fjj1_3       Decimal? @db.Decimal(18, 2)
+  fjj1_4       Decimal? @db.Decimal(18, 2)
+  fjj1_5       Decimal? @db.Decimal(18, 2)
+  fjj1_6       Decimal? @db.Decimal(18, 2)
+  fjj1_7       Decimal? @db.Decimal(18, 2)
+  intensityLevel String? @db.VarChar(45)
+  ksd          String?  @db.VarChar(45)
+  kzd          String?  @db.VarChar(45)
+  tld          String?  @db.VarChar(45)
+  sljdj        String?  @db.VarChar(45)
+  sszdlj       String?  @db.VarChar(45)
+  sjb          Decimal? @db.Decimal(18, 4)
+  sl           Decimal? @db.Decimal(18, 4)
+  bgmd         Decimal? @db.Decimal(18, 4)
+  OnOrder      Decimal? @db.Decimal(18, 4)
+}
+
+model prdbill_material {
+  pk              String   @id @db.VarChar(36)
+  pxxh            Int?
+  pk_station      String?  @db.VarChar(36)
+  pk_m            String?  @db.VarChar(36)
+  item_id         Int?
+  item_qty        Decimal? @db.Decimal(18, 4)
+  pk_Storage      String?  @db.VarChar(36)
+  Materialtitle   String?  @db.VarChar(255)
+  Materialkind    String?  @db.VarChar(50)
+  MaterialVersion String?  @db.VarChar(255)
+  qty_hope        Decimal? @db.Decimal(18, 4)
+  qty             Decimal? @db.Decimal(18, 4)
+  oper_date       DateTime?
+  remark          String?  @db.VarChar(255)
+  oper            String?  @db.VarChar(255)
+  qty_hand        Decimal? @db.Decimal(18, 4)
+  pk_recipe       String?  @db.VarChar(36)
+  hsl             Decimal? @db.Decimal(18, 4)
+  qty_recipe      Decimal? @db.Decimal(18, 4)
+}
+
+model purbill {
+  pk           String   @id @db.VarChar(36)
+  pxxh         Int?
+  pk_station   String?  @db.VarChar(36)
+  pk_Storage   String?  @db.VarChar(36)
+  pk_Supplier  String?  @db.VarChar(36)
+  qty          Decimal? @db.Decimal(18, 4)
+  price        Decimal? @db.Decimal(18, 4)
+  oper_date    DateTime?
+  remark       String?  @db.VarChar(255)
+  oper         String?  @db.VarChar(255)
+  acode        String?  @db.VarChar(50)
+}
+
+model pursupplier {
+  pk            String   @id @db.VarChar(36)
+  pxxh          Int?
+  pk_station    String?  @db.VarChar(36)
+  title         String?  @db.VarChar(255)
+  addr          String?  @db.VarChar(255)
+  addr_distance String?  @db.VarChar(50)
+  telphone      String?  @db.VarChar(255)
+  email         String?  @db.VarChar(50)
+  oper_date     DateTime?
+  remark        String?  @db.VarChar(255)
+  oper          String?  @db.VarChar(255)
+}
+
+model xsbill {
+  pk             String   @id @db.VarChar(36)
+  pxxh           Int?
+  pk_station     String?  @db.VarChar(36)
+  pk_Customer    String?  @db.VarChar(36)
+  pk_recipe      String?  @db.VarChar(36)
+  qty            Decimal? @db.Decimal(18, 4)
+  qty_now        Decimal? @db.Decimal(18, 4)
+  price          Decimal? @db.Decimal(18, 4)
+  oper_date      DateTime?
+  remark         String?  @db.VarChar(255)
+  oper           String?  @db.VarChar(255)
+  acode          String?  @db.VarChar(50)
+  status         Int?
+  lqprojectname1 String?  @db.VarChar(255)
+  qty_che        Int?
+  zbv1           String?  @db.VarChar(255)
+  zbv2           String?  @db.VarChar(255)
+  zbv3           String?  @db.VarChar(255)
+  zbf1           Decimal? @db.Decimal(18, 4)
+  zbf2           Decimal? @db.Decimal(18, 4)
+  zbf3           Decimal? @db.Decimal(18, 4)
+  zbi1           Int?
+  zbi2           Int?
+  zbi3           Int?
+  zbb1           Boolean?
+  zbb2           Boolean?
+  zbb3           Boolean?
+  bautobell      Boolean?
+  ProjectCmpy    String?  @db.VarChar(255)
+  ProjectPart    String?  @db.VarChar(100)
+  tld            String?  @db.VarChar(45)
+  WorkPart       String?  @db.VarChar(100)
+  shipper        String?  @db.VarChar(50)
+  water_adj      Decimal?     @db.Decimal(4, 0)
+  WorkMethod     String?  @db.VarChar(100)
+}
+
+model xscustomer {
+  pk            String   @id @db.VarChar(36)
+  pxxh          Int?
+  pk_station    String?  @db.VarChar(36)
+  title         String?  @db.VarChar(255)
+  addr          String?  @db.VarChar(255)
+  addr_distance Decimal? @db.Decimal(18, 4)
+  telphone      String?  @db.VarChar(255)
+  email         String?  @db.VarChar(50)
+  recipe_last   String?  @db.VarChar(36)
+  driver_last   String?  @db.VarChar(50)
+  truck_last    String?  @db.VarChar(50)
+  sale_last     DateTime?
+  oper_date     DateTime?
+  remark        String?  @db.VarChar(255)
+  oper          String?  @db.VarChar(255)
+  status        Int?
+}
+

@@ -1,33 +1,36 @@
-import { ClassSerializerInterceptor, ValidationPipe } from '@nestjs/common';
-import { NestFactory, Reflector } from '@nestjs/core';
-import { AppModule } from './app.module';
-import helmet from 'helmet';
-import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import { ClassSerializerInterceptor, ValidationPipe } from "@nestjs/common";
+import { NestFactory, Reflector } from "@nestjs/core";
+import { AppModule } from "./app.module";
+import helmet from "helmet";
+import { SwaggerModule, DocumentBuilder } from "@nestjs/swagger";
+import { initMixPlantSync } from "./mix_plant/sync";
 
 async function bootstrap() {
+  await initMixPlantSync();
   const app = await NestFactory.create(AppModule);
 
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
-      forbidNonWhitelisted: true
-    }),
+      forbidNonWhitelisted: true,
+    })
   );
   app.useGlobalInterceptors(new ClassSerializerInterceptor(app.get(Reflector)));
-  app.setGlobalPrefix('api');
+  app.setGlobalPrefix("api");
+
   const config = new DocumentBuilder()
-    .setTitle('API DOCUMENTATION')
-    .setDescription('API')
-    .setVersion('1.0')
-    .addTag('APIs')
+    .setTitle("API DOCUMENTATION")
+    .setDescription("API")
+    .setVersion("1.0")
+    .addTag("APIs")
     .build();
   const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api_doc', app, document);
-  
+  SwaggerModule.setup("api_doc", app, document);
+
   app.use(helmet());
   app.enableCors({
-    origin:['http://localhost:3011'],
-    credentials:true
+    origin: ["http://localhost:3000"],
+    credentials: true,
   });
   await app.listen(7000);
 }
