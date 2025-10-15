@@ -8,7 +8,6 @@ import { initMixPlantSync } from "./mix_plant/sync";
 async function bootstrap() {
   await initMixPlantSync();
   const app = await NestFactory.create(AppModule);
-
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,

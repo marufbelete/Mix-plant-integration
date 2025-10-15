@@ -8,3 +8,4 @@ export * from "./basrecipe-update.dto";
 export * from "./basrecipe-d-create.dto";
 export * from "./basrecipe-d-update.dto";
 export * from "./xsbill.dto";
+export * from "./prdbill.dto";

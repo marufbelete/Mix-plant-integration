@@ -9,13 +9,10 @@ import {
   Put,
   Delete,
 } from "@nestjs/common";
+import { ApiTags } from "@nestjs/swagger";
+
 import { MixPlantService } from "./mix_plant.service";
 import {
-  ClientKeyResponseDto,
-  TokenDto,
-  TokenResponseDto,
-  VerifyTokenDto,
-  VerifyTokenResponseDto,
   XSCustomerRegisterDto,
   XSCustomerUpdateDto,
   BasstorageCreateDto,
@@ -26,8 +23,9 @@ import {
   BasrecipeDUpdateDto,
   CreateXsbillDto,
   UpdateXsbillDto,
+  CreatePrdbillDto,
+  UpdatePrdbillDto,
 } from "./dtos";
-import { ApiTags } from "@nestjs/swagger";
 
 @Controller("mix_plant")
 @ApiTags("mix_plant")
@@ -40,6 +38,7 @@ export class MixPlantController {
   //   const result = await this.mixPlantService.getClientSecretAndId();
   //   return new ClientKeyResponseDto(result);
   // }
+
 
   @Get("xscustomer")
   async getAllXSCustomers() {
@@ -169,5 +168,16 @@ export class MixPlantController {
   @Delete("xsbill/:pk")
   deleteXsbill(@Param("pk") pk: string) {
     return this.mixPlantService.deleteXsbill(pk);
+  }
+
+  // PRDBILL create/update
+  @Post("prdbill")
+  createPrdbill(@Body() dto: CreatePrdbillDto) {
+    return this.mixPlantService.createPrdbill(dto);
+  }
+
+  @Put("prdbill/:pk")
+  updatePrdbill(@Param("pk") pk: string, @Body() dto: UpdatePrdbillDto) {
+    return this.mixPlantService.updatePrdbill(pk, dto);
   }
 }

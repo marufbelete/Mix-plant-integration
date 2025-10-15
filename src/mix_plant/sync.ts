@@ -1,15 +1,16 @@
 import cron from "node-cron";
-import axios from "axios";
-
+import { MixPlantService } from "./mix_plant.service";
+import { PrismaService } from "../prisma/prisma.service";
+import { ConfigService } from "@nestjs/config";
+import axios from "../http_client";
 // Mocked/placeholder dependencies (replace with real ones in your app)
 const config = {
-  SYNC_URL: "http://localhost:5000",
-  OFFLINE_SERVER_URL: "http://localhost:7000",
+  // SYNC_URL: "http://localhost:5000",
+  SYNC_URL: "https://app-api.decentgroups.com",
+  OFFLINE_SERVER_URL: "http://localhost:5000",
+  // PLANT_ID: "PLANT_A"
+  PLANT_ID: "PLANT_B",
 };
-function toFormData(payload: any) {
-  // Implement as needed for file uploads
-  return payload;
-}
 
 function createCronJob(
   schedule: string,
@@ -37,17 +38,16 @@ export const dataSyncBootFromCloud = async () => {
   createCronJob(
     "*/1 * * * *",
     async () => {
+      const online = await isOnline();
+      if (!online) {
+        console.log("🚫 Internet not available. Skipping sync.");
+        return;
+      }
       console.log("🚫 Internet .");
-      // const online = await isOnline();
-      // if (!online) {
-      //   console.log("🚫 Internet not available. Skipping sync.");
-      //   return;
-      // }
-
       try {
         const cloud_data = await axios.request({
           method: "GET",
-          url: `${config.SYNC_URL}/api/sync?metadata=plant_ready`,
+          url: `${config.SYNC_URL}/api/sync?metadata=plant_ready&branch=${config.PLANT_ID}`,
           headers: {
             "Content-Type": "application/json",
             "X-From-Sync": "true",
@@ -68,16 +68,7 @@ export const dataSyncBootFromCloud = async () => {
               "Sync-Id": sync_data.id,
             };
 
-            let payload = JSON.parse(sync_data.payload);
-
-            // Handle file uploads differently
-            if (
-              sync_data.endpoint === "/api/article" &&
-              (sync_data.method === "PUT" || sync_data.method === "POST")
-            ) {
-              payload = toFormData(sync_data.payload);
-              headers["Content-Type"] = "multipart/form-data";
-            }
+            const payload = JSON.parse(sync_data.payload);
 
             // Process the sync operation
             await axios.request({
@@ -127,6 +118,87 @@ export const dataSyncBootFromCloud = async () => {
   );
 };
 
+// Initialize services
+const configService = new ConfigService();
+const prismaService = new PrismaService(configService);
+const mixPlantService = new MixPlantService(prismaService, configService);
+
+// Cron: Every 5 minutes, POST unsynced production/bill payloads to cloud API
+async function sendPrdbillToCloudCron() {
+  createCronJob(
+    "*/1 * * * *",
+    async () => {
+      try {
+        // Get unsynced bills using the service
+        const unsyncedBills = await mixPlantService.getUnsyncedPrdbills(10);
+        if (unsyncedBills.length === 0) {
+          console.log("[CRON] No unsynced prdbill records found");
+          return;
+        }
+
+        console.log(
+          `[CRON] Found ${unsyncedBills.length} unsynced prdbill records`
+        );
+
+        // Process each unsynced bill
+        for (const bill of unsyncedBills) {
+          try {
+            const payload = {
+              pk: bill.pk,
+              pxxh: bill.pxxh,
+              pk_station: bill.pk_station,
+              pk_xsbill: bill.pk_xsBill, // Note: field name in DB is pk_xsBill (uppercase B)
+              pk_recipe: bill.pk_recipe,
+              qty: bill.qty,
+              prddate: bill.prddate,
+              driver: bill.driver,
+              cheno: bill.cheno,
+              // Add any other fields you need to send
+            };
+
+            const url = `${config.SYNC_URL}/api/schedule/plant/prdbill`;
+            const res = await axios.request({
+              method: "POST",
+              url,
+              data: payload,
+              headers: { "Content-Type": "application/json" },
+              validateStatus: (status) => status >= 200 && status < 300,
+              timeout: 10000, // 10 second timeout
+            });
+
+            // If we get here, the API call was successful
+            console.log(
+              `[CRON] Successfully synced prdbill ${bill.pk} (Status: ${res.status})`
+            );
+
+            // Update the record to mark as synced using the primary key
+            // await prismaService.prdbill_his.update({
+            //   where: { pk: bill.pk },
+            //   data: { remark3: "synced" },
+            // });
+          } catch (err: any) {
+            console.error(
+              `[CRON] Failed to sync prdbill ${bill.pk}:`,
+              err?.response?.status,
+              err?.response?.data || err?.message
+            );
+            // Continue with next record even if one fails
+          }
+        }
+      } catch (err: any) {
+        console.error(
+          "[CRON] Error in prdbill sync job:",
+          err?.message || "Unknown error"
+        );
+      }
+    },
+    "PRDBILL_POST",
+    false,
+    { timezone: "Africa/Nairobi" }
+  );
+}
+
 export async function initMixPlantSync() {
   await dataSyncBootFromCloud();
+  await sendPrdbillToCloudCron();
 }
