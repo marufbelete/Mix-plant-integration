@@ -7,8 +7,9 @@ import axios from "../http_client";
 const config = {
   // SYNC_URL: "http://localhost:5000",
   SYNC_URL: "https://app-api.decentgroups.com",
-  OFFLINE_SERVER_URL: "http://localhost:5000",
-  // PLANT_ID: "PLANT_A"
+  // OFFLINE_SERVER_URL: "http://localhost:5000",
+  OFFLINE_SERVER_URL: "http://localhost:7000",
+  // PLANT_ID: "PLANT_A",
   PLANT_ID: "PLANT_B",
 };
 
@@ -123,14 +124,16 @@ const configService = new ConfigService();
 const prismaService = new PrismaService(configService);
 const mixPlantService = new MixPlantService(prismaService, configService);
 
-// Cron: Every 5 minutes, POST unsynced production/bill payloads to cloud API
+// Cron: Every minute, POST unsynced production/bill payloads to cloud API
 async function sendPrdbillToCloudCron() {
   createCronJob(
     "*/1 * * * *",
     async () => {
       try {
         // Get unsynced bills using the service
-        const unsyncedBills = await mixPlantService.getUnsyncedPrdbills(10);
+        const unsyncedBills = (await mixPlantService.getUnsyncedPrdbills(
+          10
+        )) as any[];
         if (unsyncedBills.length === 0) {
           console.log("[CRON] No unsynced prdbill records found");
           return;
@@ -172,10 +175,10 @@ async function sendPrdbillToCloudCron() {
             );
 
             // Update the record to mark as synced using the primary key
-            // await prismaService.prdbill_his.update({
-            //   where: { pk: bill.pk },
-            //   data: { remark3: "synced" },
-            // });
+            await prismaService.prdbill_his.update({
+              where: { pk: bill.pk },
+              data: { zbv1: "synced" },
+            });
           } catch (err: any) {
             console.error(
               `[CRON] Failed to sync prdbill ${bill.pk}:`,
@@ -197,8 +200,72 @@ async function sendPrdbillToCloudCron() {
     { timezone: "Africa/Nairobi" }
   );
 }
+// Cron: Every 5 minutes, POST unsynced production/bill payloads to cloud API
+let isSyncing = false;
+
+async function sendMaterialToCloudCron() {
+  createCronJob(
+    "*/1 * * * *",
+    async () => {
+      if (isSyncing) {
+        console.log("[CRON] Sync already in progress. Skipping this run.");
+        return;
+      }
+
+      isSyncing = true;
+      try {
+        const unsyncedMaterial =
+          (await mixPlantService.getUnsyncedMaterialills()) as any[];
+
+        if (unsyncedMaterial.length === 0) {
+          console.log("[CRON] No unsynced material records found");
+          return;
+        }
+
+        console.log(
+          `[CRON] Found ${unsyncedMaterial.length} unsynced material records`
+        );
+
+        for (const material of unsyncedMaterial) {
+          try {
+            const url = `${config.SYNC_URL}/api/schedule/plant/prod_material`;
+            const res = await axios.post(url, material, {
+              headers: { "Content-Type": "application/json" },
+              timeout: 10000,
+              validateStatus: (status) => status >= 200 && status < 300,
+            });
+            console.log(
+              `[CRON] Successfully synced material ${material.pk} (Status: ${res.status})`
+            );
+            await prismaService.prdbill_material.update({
+              where: { pk: material.pk },
+              data: { MaterialVersion: "synced" },
+            });
+          } catch (err: any) {
+            console.error(
+              `[CRON] Failed to sync material ${material.pk}:`,
+              err?.response?.status,
+              err?.response?.data || err?.message
+            );
+          }
+        }
+      } catch (err: any) {
+        console.error(
+          "[CRON] Error in material sync job:",
+          err?.message || "Unknown error"
+        );
+      } finally {
+        isSyncing = false;
+      }
+    },
+    "MATERIAL_POST",
+    false,
+    { timezone: "Africa/Nairobi" }
+  );
+}
 
 export async function initMixPlantSync() {
   await dataSyncBootFromCloud();
   await sendPrdbillToCloudCron();
+  await sendMaterialToCloudCron();
 }

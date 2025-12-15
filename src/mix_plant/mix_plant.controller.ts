@@ -39,7 +39,6 @@ export class MixPlantController {
   //   return new ClientKeyResponseDto(result);
   // }
 
-
   @Get("xscustomer")
   async getAllXSCustomers() {
     return this.mixPlantService.getAllXSCustomers();

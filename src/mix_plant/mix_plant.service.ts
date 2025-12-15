@@ -14,8 +14,6 @@ import {
 @Injectable()
 export class MixPlantService {
   private readonly plantID = "6B8B7D9E-9ED5-423A-A10C-CEEE54CFB0A6";
-  private readonly SYNC_URL = "https://app-api.decentgroups.com";
-  // private readonly SYNC_URL = "http://localhost:5000";
   constructor(
     private prisma: PrismaService,
     private configService: ConfigService
@@ -33,34 +31,72 @@ export class MixPlantService {
   }
 
   async getUnsyncedPrdbills(take = 10) {
-    const synced_data = await axios.request({
-      method: "GET",
-      url: `${this.SYNC_URL}/api/schedule/delivery/synced?voucherDefinition=131`,
-      headers: {
-        "Content-Type": "application/json",
-        "X-From-Sync": "true",
-      },
-      validateStatus: (status) => status >= 200 && status < 300,
-    });
-    // Extract just the codes from the API response
-    const syncedCodes = synced_data.data.map((item) => item.code);
     const ninetyDaysAgo = new Date();
     ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
-    // Query unsynced PRS bills
+
     return this.prisma.prdbill_his.findMany({
       where: {
-        pk_xsBill: {
-          startsWith: "PRS",
-        },
-        pk: {
-          notIn: syncedCodes.length ? syncedCodes : ["_none_"], // avoids empty array error
+        zbv1: {
+          not: "synced",
         },
         oper_date: {
-          gte: ninetyDaysAgo, // only include last 90 days
+          gte: ninetyDaysAgo,
         },
       },
       take,
     });
+  }
+
+  // async getUnsyncedMaterialills(take = 10) {
+  //   const synced_data = await axios.request({
+  //     method: "GET",
+  //     url: `${this.SYNC_URL}/api/schedule/material/synced`,
+  //     headers: {
+  //       "Content-Type": "application/json",
+  //       "X-From-Sync": "true",
+  //     },
+  //     validateStatus: (status) => status >= 200 && status < 300,
+  //   });
+  //   // Extract just the codes from the API response
+  //   console.log(synced_data)
+  //   const syncedCodes = synced_data.data.map((item) => item.pk);
+  //   console.log(syncedCodes)
+  //   const ninetyDaysAgo = new Date();
+  //   ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+  //   // Query unsynced PRS bills
+  //   return this.prisma.prdbill_material.findMany({
+  //     where: {
+  //       pk: {
+  //         notIn: syncedCodes.length ? syncedCodes : ["_none_"], // avoids empty array error
+  //       },
+  //       oper_date: {
+  //         gte: ninetyDaysAgo, // only include last 90 days
+  //       },
+  //     },
+  //     take,
+  //   });
+  // }
+
+  async getUnsyncedMaterialills(take = 10) {
+    const ninetyDaysAgo = new Date();
+    ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+
+    return this.prisma.$queryRawUnsafe(
+      `
+      SELECT
+        pm.*,
+        ph.pk_xsBill AS pk_xsBill
+      FROM prdbill_material AS pm
+      LEFT JOIN prdbill_his AS ph
+        ON pm.pk_m = ph.pk
+      WHERE pm.MaterialVersion <> 'synced'
+        AND pm.oper_date >= ?
+      ORDER BY pm.oper_date DESC
+      LIMIT ?;
+    `,
+      ninetyDaysAgo,
+      take
+    );
   }
 
   async registerXSCustomer(dto: any) {

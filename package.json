@@ -7,17 +7,20 @@
   "license": "MIT",
   "pkg": {
     "scripts": [
-      "node_modules/@serialport/**/*.js"
+      "dist/**/*.js"
     ],
     "assets": [
-      "node_modules/@serialport/bindings-cpp/prebuilds/**/*"
+      "dist/**/*",
+      "node_modules/@serialport/binding*/**/*"
     ]
   },
   "scripts": {
     "build": "nest build",
-    "build:pkg": "pkg dist/main.js --output dist/plant --compress GZip --targets node18-win-x64",
+    "build:pkg": "pkg dist/src/main.js --output dist/plant --compress GZip --targets node18-win-x64",
+    "build:jo": "nest build && javascript-obfuscator ./dist/main.js --output ./dist/app.js --config ./obfuscate.config.js",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
+    "prisma:generate": "prisma generate",
     "migrate:dev": "prisma migrate dev",
     "migrate:prod": "prisma migrate deploy",
     "dev": "nest start --watch",
@@ -38,6 +41,7 @@
     "@nestjs/platform-express": "^9.0.0",
     "@nestjs/swagger": "^7.3.0",
     "@prisma/client": "^5.3.1",
+    "@serialport/parser-readline": "^13.0.0",
     "axios": "^0.27.2",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.0",
@@ -47,7 +51,8 @@
     "node-cron": "^4.2.0",
     "prisma": "^5.3.1",
     "reflect-metadata": "^0.1.13",
-    "rxjs": "^7.2.0"
+    "rxjs": "^7.2.0",
+    "serialport": "^13.0.0"
   },
   "devDependencies": {
     "@nestjs/cli": "^9.0.0",
@@ -70,7 +75,8 @@
     "ts-loader": "^9.2.3",
     "ts-node": "^10.0.0",
     "tsconfig-paths": "4.1.1",
-    "typescript": "^4.7.4"
+    "typescript": "^4.7.4",
+    "webpack-cli": "^6.0.1"
   },
   "jest": {
     "moduleFileExtensions": [
