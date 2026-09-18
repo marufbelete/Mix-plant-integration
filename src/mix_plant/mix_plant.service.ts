@@ -3,7 +3,6 @@ import { PrismaService } from "../prisma/prisma.service";
 import { ConfigService } from "@nestjs/config";
 import { Decimal } from "@prisma/client/runtime/library";
 import { v4 as uuidv4 } from "uuid";
-import axios from "../http_client";
 import {
   CreateXsbillDto,
   UpdateXsbillDto,
@@ -34,69 +33,80 @@ export class MixPlantService {
     const ninetyDaysAgo = new Date();
     ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
 
-    return this.prisma.prdbill_his.findMany({
-      where: {
-        zbv1: {
-          not: "synced",
-        },
-        oper_date: {
-          gte: ninetyDaysAgo,
-        },
-      },
-      take,
-    });
+    return this.prisma.$queryRaw`
+        SELECT ph.* FROM prdbill_his ph
+        LEFT JOIN sync_track.prodbill_his_sync s ON ph.pk = s.pbh_pk
+        WHERE (s.synced IS NULL OR s.synced = FALSE)
+          AND ph.oper_date >= ${ninetyDaysAgo}
+        ORDER BY ISNULL(s.attempts) DESC, s.attempts ASC -- Try never-attempted first, then least attempts
+        LIMIT ${take};
+    `;
   }
 
-  // async getUnsyncedMaterialills(take = 10) {
-  //   const synced_data = await axios.request({
-  //     method: "GET",
-  //     url: `${this.SYNC_URL}/api/schedule/material/synced`,
-  //     headers: {
-  //       "Content-Type": "application/json",
-  //       "X-From-Sync": "true",
-  //     },
-  //     validateStatus: (status) => status >= 200 && status < 300,
-  //   });
-  //   // Extract just the codes from the API response
-  //   console.log(synced_data)
-  //   const syncedCodes = synced_data.data.map((item) => item.pk);
-  //   console.log(syncedCodes)
-  //   const ninetyDaysAgo = new Date();
-  //   ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
-  //   // Query unsynced PRS bills
-  //   return this.prisma.prdbill_material.findMany({
-  //     where: {
-  //       pk: {
-  //         notIn: syncedCodes.length ? syncedCodes : ["_none_"], // avoids empty array error
-  //       },
-  //       oper_date: {
-  //         gte: ninetyDaysAgo, // only include last 90 days
-  //       },
-  //     },
-  //     take,
-  //   });
-  // }
+  async getUnsyncedMaterialBills(take = 10) {
+    const ninetyDaysAgo = new Date();
+    ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 900);
 
-  async getUnsyncedMaterialills(take = 10) {
+    return this.prisma.$queryRaw`
+      SELECT 
+        pm.*, 
+        ph.pk_xsBill AS pk_xsBill
+      FROM prdbill_material pm
+      INNER JOIN prdbill_his ph ON pm.pk_m = ph.pk
+      LEFT JOIN sync_track.material_sync s ON pm.pk = s.ma_pk
+      WHERE (s.synced IS NULL OR s.synced = FALSE)
+        AND pm.oper_date >= ${ninetyDaysAgo}
+      ORDER BY ISNULL(s.attempts) DESC, s.attempts ASC
+      LIMIT ${take};
+    `;
+  }
+
+  async getUnsyncedMaterialHand(take = 10) {
     const ninetyDaysAgo = new Date();
     ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
 
-    return this.prisma.$queryRawUnsafe(
-      `
-      SELECT
-        pm.*,
-        ph.pk_xsBill AS pk_xsBill
-      FROM prdbill_material AS pm
-      LEFT JOIN prdbill_his AS ph
-        ON pm.pk_m = ph.pk
-      WHERE pm.MaterialVersion <> 'synced'
-        AND pm.oper_date >= ?
-      ORDER BY pm.oper_date DESC
-      LIMIT ?;
-    `,
-      ninetyDaysAgo,
-      take
-    );
+    return this.prisma.$queryRaw`
+      SELECT 
+        ph.*,
+        -- We generate the hash on the fly to match the tracking table
+        SHA2(CONCAT(
+            IFNULL(ph.pk_Storage, 'N/A'), 
+            DATE_FORMAT(ph.oper_date, '%Y%m%d%H%i%s'), 
+            IFNULL(ph.qty_hand, 'N/A')
+        ), 256) as row_fingerprint
+      FROM prd_hand ph
+      LEFT JOIN sync_track.material_hand_sync s 
+        ON s.row_hash = SHA2(CONCAT(
+            IFNULL(ph.pk_Storage, 'N/A'), 
+            DATE_FORMAT(ph.oper_date, '%Y%m%d%H%i%s'), 
+            IFNULL(ph.qty_hand, 'N/A')
+        ), 256)
+      WHERE (s.synced IS NULL OR s.synced = 0)
+        AND ph.oper_date >= ${ninetyDaysAgo}
+      ORDER BY 
+        (s.attempts IS NULL) DESC, 
+        s.attempts ASC             
+      LIMIT ${take};
+    `;
+  }
+
+  async getUnsyncedBashHistory(take = 10) {
+    const ninetyDaysAgo = new Date();
+    ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+
+    return this.prisma.$queryRaw`
+      SELECT 
+        bh.*
+      FROM bashistory bh
+      LEFT JOIN sync_track.bashistory_sync s 
+        ON s.pk_b = bh.pk
+      WHERE (s.synced IS NULL OR s.synced = 0)
+        AND bh.oper_date >= ${ninetyDaysAgo}
+      ORDER BY 
+        (s.attempts IS NULL) DESC, 
+        s.attempts ASC             
+      LIMIT ${take};
+    `;
   }
 
   async registerXSCustomer(dto: any) {

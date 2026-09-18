@@ -5,12 +5,12 @@ import { ConfigService } from "@nestjs/config";
 import axios from "../http_client";
 // Mocked/placeholder dependencies (replace with real ones in your app)
 const config = {
-  // SYNC_URL: "http://localhost:5000",
-  SYNC_URL: "https://app-api.decentgroups.com",
+  SYNC_URL: "http://localhost:5000",
+  // SYNC_URL: "https://app-api.decentgroups.com",
   // OFFLINE_SERVER_URL: "http://localhost:5000",
   OFFLINE_SERVER_URL: "http://localhost:7000",
-  // PLANT_ID: "PLANT_A",
-  PLANT_ID: "PLANT_B",
+  PLANT_ID: "PLANT_A",
+  // PLANT_ID: "PLANT_B",
 };
 
 function createCronJob(
@@ -37,7 +37,7 @@ async function isOnline() {
 
 export const dataSyncBootFromCloud = async () => {
   createCronJob(
-    "*/1 * * * *",
+    "*/5 * * * * *",
     async () => {
       const online = await isOnline();
       if (!online) {
@@ -166,7 +166,7 @@ async function sendPrdbillToCloudCron() {
               data: payload,
               headers: { "Content-Type": "application/json" },
               validateStatus: (status) => status >= 200 && status < 300,
-              timeout: 10000, // 10 second timeout
+              timeout: 100000, // 100 second timeout
             });
 
             // If we get here, the API call was successful
@@ -175,16 +175,32 @@ async function sendPrdbillToCloudCron() {
             );
 
             // Update the record to mark as synced using the primary key
-            await prismaService.prdbill_his.update({
-              where: { pk: bill.pk },
-              data: { zbv1: "synced" },
-            });
+            await prismaService.$executeRaw`
+            INSERT INTO sync_track.prodbill_his_sync (pbh_pk, synced, attempts, error)
+            VALUES (${bill.pk}, true, 1, NULL)
+            ON DUPLICATE KEY UPDATE 
+              synced = true, 
+              attempts = attempts + 1, 
+              error = NULL,
+              last_attempt = CURRENT_TIMESTAMP;
+          `;
           } catch (err: any) {
             console.error(
               `[CRON] Failed to sync prdbill ${bill.pk}:`,
               err?.response?.status,
               err?.response?.data || err?.message
             );
+            await prismaService.$executeRaw`
+            INSERT INTO sync_track.prodbill_his_sync (pbh_pk, synced, attempts, error)
+            VALUES (${bill.pk}, false, 1, ${
+              err?.response?.data || err?.message
+            })
+            ON DUPLICATE KEY UPDATE 
+              synced = false, 
+              attempts = attempts + 1, 
+              error = ${err?.response?.data || err?.message},
+              last_attempt = CURRENT_TIMESTAMP;
+          `;
             // Continue with next record even if one fails
           }
         }
@@ -200,7 +216,7 @@ async function sendPrdbillToCloudCron() {
     { timezone: "Africa/Nairobi" }
   );
 }
-// Cron: Every 5 minutes, POST unsynced production/bill payloads to cloud API
+// Cron: Every minutes, POST unsynced production/bill payloads to cloud API
 let isSyncing = false;
 
 async function sendMaterialToCloudCron() {
@@ -215,7 +231,7 @@ async function sendMaterialToCloudCron() {
       isSyncing = true;
       try {
         const unsyncedMaterial =
-          (await mixPlantService.getUnsyncedMaterialills()) as any[];
+          (await mixPlantService.getUnsyncedMaterialBills()) as any[];
 
         if (unsyncedMaterial.length === 0) {
           console.log("[CRON] No unsynced material records found");
@@ -231,22 +247,38 @@ async function sendMaterialToCloudCron() {
             const url = `${config.SYNC_URL}/api/schedule/plant/prod_material`;
             const res = await axios.post(url, material, {
               headers: { "Content-Type": "application/json" },
-              timeout: 10000,
+              timeout: 100000,
               validateStatus: (status) => status >= 200 && status < 300,
             });
             console.log(
               `[CRON] Successfully synced material ${material.pk} (Status: ${res.status})`
             );
-            await prismaService.prdbill_material.update({
-              where: { pk: material.pk },
-              data: { MaterialVersion: "synced" },
-            });
+            await prismaService.$executeRaw`
+            INSERT INTO sync_track.material_sync (ma_pk, synced, attempts, error)
+            VALUES (${material.pk}, true, 1, NULL)
+            ON DUPLICATE KEY UPDATE 
+              synced = true, 
+              attempts = attempts + 1, 
+              error = NULL,
+              last_attempt = CURRENT_TIMESTAMP;
+          `;
           } catch (err: any) {
             console.error(
               `[CRON] Failed to sync material ${material.pk}:`,
               err?.response?.status,
               err?.response?.data || err?.message
             );
+            await prismaService.$executeRaw`
+            INSERT INTO sync_track.material_sync (ma_pk, synced, attempts, error)
+            VALUES (${material.pk}, false, 1, ${
+              err?.response?.data || err?.message
+            })
+            ON DUPLICATE KEY UPDATE 
+              synced = false, 
+              attempts = attempts + 1, 
+              error = ${err?.response?.data || err?.message},
+              last_attempt = CURRENT_TIMESTAMP;
+          `;
           }
         }
       } catch (err: any) {
@@ -264,8 +296,166 @@ async function sendMaterialToCloudCron() {
   );
 }
 
+let isSyncingHand = false;
+async function sendMaterialHandToCloudCron() {
+  createCronJob(
+    "*/1 * * * *",
+    async () => {
+      if (isSyncingHand) {
+        console.log("[CRON] Sync already in progress. Skipping this run.");
+        return;
+      }
+
+      isSyncingHand = true;
+      try {
+        const unsyncedMaterialHand =
+          (await mixPlantService.getUnsyncedMaterialHand()) as any[];
+
+        if (unsyncedMaterialHand.length === 0) {
+          console.log("[CRON] No unsynced material hand records found");
+          return;
+        }
+
+        console.log(
+          `[CRON] Found ${unsyncedMaterialHand.length} unsynced material hand records`
+        );
+
+        for (const material of unsyncedMaterialHand) {
+          try {
+            const url = `${config.SYNC_URL}/api/schedule/plant/prod_material_hand`;
+            const res = await axios.post(url, material, {
+              headers: { "Content-Type": "application/json" },
+              timeout: 100000,
+              validateStatus: (status) => status >= 200 && status < 300,
+            });
+            console.log(
+              `[CRON] Successfully synced material hand ${material.pk} (Status: ${res.status})`
+            );
+            await prismaService.$executeRaw`
+            INSERT INTO sync_track.material_hand_sync (row_hash, synced, attempts, error)
+            VALUES (${material.row_fingerprint}, true, 1, NULL)
+            ON DUPLICATE KEY UPDATE 
+              synced = true, 
+              attempts = attempts + 1, 
+              error = NULL,
+              last_attempt = CURRENT_TIMESTAMP;
+          `;
+          } catch (err: any) {
+            console.error(
+              `[CRON] Failed to sync material hand ${material.row_fingerprint}:`,
+              err?.response?.status,
+              err?.response?.data || err?.message
+            );
+            await prismaService.$executeRaw`
+            INSERT INTO sync_track.material_hand_sync (row_hash, synced, attempts, error)
+            VALUES (${material.row_fingerprint}, false, 1, ${
+              err?.response?.data || err?.message
+            })
+            ON DUPLICATE KEY UPDATE 
+              synced = false, 
+              attempts = attempts + 1, 
+              error = ${err?.response?.data || err?.message},
+              last_attempt = CURRENT_TIMESTAMP;
+          `;
+          }
+        }
+      } catch (err: any) {
+        console.error(
+          "[CRON] Error in material hand sync job:",
+          err?.message || "Unknown error"
+        );
+      } finally {
+        isSyncingHand = false;
+      }
+    },
+    "MATERIAL_HAND_POST",
+    false,
+    { timezone: "Africa/Nairobi" }
+  );
+}
+
+let isSyncingHistory = false;
+async function sendHistoryToCloudCron() {
+  createCronJob(
+    "*/1 * * * *",
+    async () => {
+      if (isSyncingHistory) {
+        console.log("[CRON] Sync already in progress. Skipping this run.");
+        return;
+      }
+
+      isSyncingHistory = true;
+      try {
+        const unsyncedHistory =
+          (await mixPlantService.getUnsyncedBashHistory()) as any[];
+
+        if (unsyncedHistory.length === 0) {
+          console.log("[CRON] No unsynced history records found");
+          return;
+        }
+
+        console.log(
+          `[CRON] Found ${unsyncedHistory.length} unsynced history records`
+        );
+
+        for (const history of unsyncedHistory) {
+          try {
+            const url = `${config.SYNC_URL}/api/schedule/plant/history`;
+            const res = await axios.post(url, history, {
+              headers: { "Content-Type": "application/json" },
+              timeout: 100000,
+              validateStatus: (status) => status >= 200 && status < 300,
+            });
+            console.log(
+              `[CRON] Successfully synced history ${history.pk} (Status: ${res.status})`
+            );
+            await prismaService.$executeRaw`
+            INSERT INTO sync_track.bashistory_sync (pk_b, synced, attempts, error)
+            VALUES (${history.pk}, true, 1, NULL)
+            ON DUPLICATE KEY UPDATE 
+              synced = true, 
+              attempts = attempts + 1, 
+              error = NULL,
+              last_attempt = CURRENT_TIMESTAMP;
+          `;
+          } catch (err: any) {
+            console.error(
+              `[CRON] Failed to sync history ${history.pk}:`,
+              err?.response?.status,
+              err?.response?.data || err?.message
+            );
+            await prismaService.$executeRaw`
+            INSERT INTO sync_track.bashistory_sync (pk_b, synced, attempts, error)
+            VALUES (${history.pk}, false, 1, ${
+              err?.response?.data || err?.message
+            })
+            ON DUPLICATE KEY UPDATE 
+              synced = false, 
+              attempts = attempts + 1, 
+              error = ${err?.response?.data || err?.message},
+              last_attempt = CURRENT_TIMESTAMP;
+          `;
+          }
+        }
+      } catch (err: any) {
+        console.error(
+          "[CRON] Error in history sync job:",
+          err?.message || "Unknown error"
+        );
+      } finally {
+        isSyncingHistory = false;
+      }
+    },
+    "MATERIAL_HISTORY_POST",
+    false,
+    { timezone: "Africa/Nairobi" }
+  );
+}
+
 export async function initMixPlantSync() {
   await dataSyncBootFromCloud();
   await sendPrdbillToCloudCron();
   await sendMaterialToCloudCron();
+  await sendMaterialHandToCloudCron();
+  await sendHistoryToCloudCron();
 }
