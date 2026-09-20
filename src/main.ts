@@ -1,3 +1,4 @@
+import "./env";
 import { ClassSerializerInterceptor, ValidationPipe } from "@nestjs/common";
 import { NestFactory, Reflector } from "@nestjs/core";
 import { AppModule } from "./app.module";
@@ -27,10 +28,14 @@ async function bootstrap() {
   SwaggerModule.setup("api_doc", app, document);
 
   app.use(helmet());
+  const corsOrigin = process.env.CORS_ORIGIN
+    ? process.env.CORS_ORIGIN.split(",").map((item) => item.trim())
+    : ["http://localhost:3000"];
   app.enableCors({
-    origin: ["http://localhost:3000"],
+    origin: corsOrigin,
     credentials: true,
   });
-  await app.listen(7000);
+  const port = process.env.PORT || 7000;
+  await app.listen(port);
 }
 bootstrap();

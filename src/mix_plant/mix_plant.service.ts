@@ -12,7 +12,13 @@ import {
 
 @Injectable()
 export class MixPlantService {
-  private readonly plantID = "6B8B7D9E-9ED5-423A-A10C-CEEE54CFB0A6";
+  private get plantID(): string {
+    return (
+      process.env.PLANT_STATION_ID ||
+      this.configService?.get<string>("PLANT_STATION_ID") ||
+      "6B8B7D9E-9ED5-423A-A10C-CEEE54CFB0A6"
+    );
+  }
   constructor(
     private prisma: PrismaService,
     private configService: ConfigService

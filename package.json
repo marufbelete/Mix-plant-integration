@@ -10,13 +10,14 @@
       "dist/**/*.js"
     ],
     "assets": [
+      ".env",
       "dist/**/*",
       "node_modules/@serialport/binding*/**/*"
     ]
   },
   "scripts": {
     "build": "nest build",
-    "build:pkg": "pkg dist/src/main.js --output dist/plant --compress GZip --targets node18-win-x64",
+    "build:pkg": "node -e \"const fs=require('fs'); fs.copyFileSync('.env', 'dist/.env'); fs.copyFileSync('.env', 'dist/src/.env')\" && pkg dist/src/main.js --output dist/plant --compress GZip --targets node18-win-x64",
     "build:jo": "nest build && javascript-obfuscator ./dist/main.js --output ./dist/app.js --config ./obfuscate.config.js",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",

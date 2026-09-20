@@ -1,16 +1,22 @@
+import "../env";
 import cron from "node-cron";
 import { MixPlantService } from "./mix_plant.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { ConfigService } from "@nestjs/config";
 import axios from "../http_client";
-// Mocked/placeholder dependencies (replace with real ones in your app)
+
 const config = {
-  SYNC_URL: "http://localhost:5000",
-  // SYNC_URL: "https://app-api.decentgroups.com",
-  // OFFLINE_SERVER_URL: "http://localhost:5000",
-  OFFLINE_SERVER_URL: "http://localhost:7000",
-  PLANT_ID: "PLANT_A",
-  // PLANT_ID: "PLANT_B",
+  get SYNC_URL() {
+    return process.env.SYNC_URL ;
+  },
+  get OFFLINE_SERVER_URL() {
+    return (
+      process.env.OFFLINE_SERVER_URL
+    );
+  },
+  get PLANT_ID() {
+    return process.env.PLANT_ID;
+  },
 };
 
 function createCronJob(
