@@ -366,7 +366,22 @@ export class MixPlantService {
     Object.keys(dto).forEach((key) => {
       if (dto[key] === null) dto[key] = undefined;
     });
-    return this.prisma.basrecipe.update({ where: { pk }, data: dto });
+
+    // Delete existing recipe details for this master recipe
+    await this.prisma.basrecipe_d.deleteMany({
+      where: { pk_m: pk },
+    });
+
+    return this.prisma.basrecipe.upsert({
+      where: { pk },
+      create: {
+        pk,
+        pk_station: this.plantID,
+        ...dto,
+        oper_date: new Date().toISOString(),
+      },
+      update: dto,
+    });
   }
 
   async deleteBasrecipe(pk: string) {
@@ -394,44 +409,22 @@ export class MixPlantService {
   }
 
   async createBasrecipeD(dto: any) {
-    const { pk: origPk, pxxh: origPxxh, ...data } = dto;
-    let pk = origPk;
-    let pxxh = origPxxh;
-    if (!pk || pk === "code") {
-      pk = uuidv4();
-    }
-    if (pxxh === undefined || pxxh === null) {
-      const last = await this.prisma.basrecipe_d.findFirst({
-        where: data.pk_m ? { pk_m: data.pk_m } : undefined,
-        orderBy: { pxxh: "desc" },
-        select: { pxxh: true },
+    const pk = dto.pk || uuidv4();
+    if (dto.pk) {
+      await this.prisma.basrecipe_d.deleteMany({
+        where: { pk },
       });
-      pxxh = last?.pxxh != null ? last.pxxh + 1 : 1;
-    } else if (typeof pxxh === "string") {
-      pxxh = parseInt(pxxh, 10);
-    }
-
-    const allowedKeys = ["pk_m", "pk_Storage", "qty", "remark"];
-    const filteredData: any = {};
-    for (const key of allowedKeys) {
-      if (data[key] !== null && data[key] !== undefined) {
-        filteredData[key] = data[key];
-      }
-    }
-    if (filteredData.qty !== undefined && typeof filteredData.qty === "string") {
-      filteredData.qty = parseFloat(filteredData.qty);
-    }
-
-    // Ensure no primary key collision on retry
-    const existingWithPk = await this.prisma.basrecipe_d.findUnique({
-      where: { pk },
-    });
-    if (existingWithPk) {
-      await this.prisma.basrecipe_d.delete({ where: { pk } });
     }
 
     return this.prisma.basrecipe_d.create({
-      data: { pk, pxxh, ...filteredData },
+      data: {
+        pk,
+        pk_m: dto.pk_m,
+        pk_Storage: dto?.pk_Storage || dto?.pk_storage,
+        qty: dto.qty != null ? Number(dto.qty) : undefined,
+        pxxh: dto.pxxh != null ? Number(dto.pxxh) : undefined,
+        remark: dto.remark,
+      },
     });
   }
 
@@ -440,94 +433,33 @@ export class MixPlantService {
     dto: any,
     headers?: Record<string, string>
   ) {
-    const uniqueCodeHeader =
-      headers?.["x-unique-code"] || headers?.["X-Unique-Code"];
-    const uniqueCode = uniqueCodeHeader
-      ? uniqueCodeHeader.split(",")[0].trim()
-      : undefined;
+    const pk_m =
+      dto?.pk_m ||
+      headers?.["x-unique-code"] ||
+      headers?.["X-Unique-Code"];
 
-    const targetPkM =
-      uniqueCode ||
-      (Array.isArray(dto) ? dto[0]?.pk_m : dto?.pk_m) ||
-      (pk !== "code" ? pk : undefined);
-
-    const items = Array.isArray(dto)
-      ? dto
-      : Array.isArray(dto?.data)
-      ? dto.data
-      : Array.isArray(dto?.items)
-      ? dto.items
-      : null;
+    const items = dto?.items || (Array.isArray(dto) ? dto : null);
 
     if (items) {
-      if (targetPkM) {
-        await this.prisma.basrecipe_d.deleteMany({
-          where: { pk_m: targetPkM },
-        });
+      if (pk_m) {
+        await this.prisma.basrecipe_d.deleteMany({ where: { pk_m } });
       }
-      const createdItems = [];
-      for (const item of items) {
-        const cleanPk = item.pk && item.pk !== "code" ? item.pk : undefined;
-        const created = await this.createBasrecipeD({
-          ...item,
-          pk: cleanPk,
-          pk_m: item.pk_m || targetPkM,
-        });
-        createdItems.push(created);
-      }
-      return createdItems;
-    } else {
-      let existingPxxh: number | undefined;
-
-      // Delete by (pk_m AND pk_Storage) so each storage silo only replaces its own record
-      // and does NOT delete previously inserted silos of the same recipe!
-      if (targetPkM && dto?.pk_Storage) {
-        const existing = await this.prisma.basrecipe_d.findFirst({
-          where: {
-            pk_m: targetPkM,
-            pk_Storage: dto.pk_Storage,
-          },
-        });
-        if (existing?.pxxh != null) {
-          existingPxxh = existing.pxxh;
-        }
-        await this.prisma.basrecipe_d.deleteMany({
-          where: {
-            pk_m: targetPkM,
-            pk_Storage: dto.pk_Storage,
-          },
-        });
-      } else if (targetPkM && dto?.pxxh != null) {
-        await this.prisma.basrecipe_d.deleteMany({
-          where: {
-            pk_m: targetPkM,
-            pxxh: Number(dto.pxxh),
-          },
-        });
-      } else if (pk && pk !== "code") {
-        await this.prisma.basrecipe_d.deleteMany({
-          where: { pk },
-        });
-      } else if (targetPkM) {
-        await this.prisma.basrecipe_d.deleteMany({
-          where: { pk_m: targetPkM },
-        });
-      }
-
-      const cleanPk =
-        dto?.pk && dto.pk !== "code"
-          ? dto.pk
-          : pk && pk !== "code"
-          ? pk
-          : undefined;
-
-      return this.createBasrecipeD({
-        ...dto,
-        pk: cleanPk,
-        pk_m: dto?.pk_m || targetPkM,
-        pxxh: dto?.pxxh != null ? dto.pxxh : existingPxxh,
-      });
+      return Promise.all(
+        items.map((item: any, i: number) =>
+          this.createBasrecipeD({
+            ...item,
+            pk_m: item.pk_m || pk_m,
+            pxxh: item.pxxh ?? i + 1,
+          })
+        )
+      );
     }
+
+    return this.createBasrecipeD({
+      ...dto,
+      pk: dto?.pk || pk,
+      pk_m: dto?.pk_m || pk_m,
+    });
   }
 
   async deleteBasrecipeD(pk: string) {
