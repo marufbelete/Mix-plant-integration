@@ -7,7 +7,6 @@ import { SwaggerModule, DocumentBuilder } from "@nestjs/swagger";
 import { initMixPlantSync } from "./mix_plant/sync";
 
 async function bootstrap() {
-  await initMixPlantSync();
   const app = await NestFactory.create(AppModule);
   app.useGlobalPipes(
     new ValidationPipe({
@@ -37,5 +36,6 @@ async function bootstrap() {
   });
   const port = process.env.PORT || 7000;
   await app.listen(port);
+  await initMixPlantSync();
 }
 bootstrap();

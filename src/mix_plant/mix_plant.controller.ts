@@ -8,6 +8,7 @@ import {
   Post,
   Put,
   Delete,
+  Headers,
 } from "@nestjs/common";
 import { ApiTags } from "@nestjs/swagger";
 
@@ -130,12 +131,21 @@ export class MixPlantController {
     return this.mixPlantService.createBasrecipeD(dto);
   }
 
+  @Put("basrecipe_d/code")
+  async updateBasrecipeDByCode(
+    @Body() dto: any,
+    @Headers() headers: Record<string, string>
+  ) {
+    return this.mixPlantService.updateBasrecipeD("code", dto, headers);
+  }
+
   @Put("basrecipe_d/:pk")
   async updateBasrecipeD(
     @Param("pk") pk: string,
-    @Body() dto: BasrecipeDUpdateDto
+    @Body() dto: any,
+    @Headers() headers: Record<string, string>
   ) {
-    return this.mixPlantService.updateBasrecipeD(pk, dto);
+    return this.mixPlantService.updateBasrecipeD(pk, dto, headers);
   }
 
   @Delete("basrecipe_d/:pk")

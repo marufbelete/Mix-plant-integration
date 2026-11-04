@@ -41,17 +41,25 @@ async function isOnline() {
   }
 }
 
+let isSyncingFromCloud = false;
+
 export const dataSyncBootFromCloud = async () => {
   createCronJob(
     "*/5 * * * * *",
     async () => {
-      const online = await isOnline();
-      if (!online) {
-        console.log("🚫 Internet not available. Skipping sync.");
+      if (isSyncingFromCloud) {
         return;
       }
-      console.log("🚫 Internet .");
+      isSyncingFromCloud = true;
+
       try {
+        const online = await isOnline();
+        if (!online) {
+          console.log("🚫 Internet not available. Skipping sync.");
+          return;
+        }
+        console.log("🚫 Internet .");
+
         const cloud_data = await axios.request({
           method: "GET",
           url: `${config.SYNC_URL}/api/sync?metadata=plant_ready&branch=${config.PLANT_ID}`,
@@ -65,15 +73,30 @@ export const dataSyncBootFromCloud = async () => {
         if (!cloud_data?.data?.length) return;
         const failed_codes: string[] = [];
         for (const sync_data of cloud_data.data) {
-          const unique_codes = sync_data?.unique_code?.split(",");
-          if (unique_codes?.some((code: string) => failed_codes.includes(code)))
+          const unique_codes = sync_data?.unique_code
+            ? sync_data.unique_code
+                .split(",")
+                .map((code: string) => code.trim())
+                .filter(Boolean)
+            : [];
+
+          if (unique_codes.some((code: string) => failed_codes.includes(code))) {
+            console.warn(
+              `[SYNC] Skipping task ${sync_data.id} (${sync_data.endpoint}) because code in [${unique_codes.join(", ")}] failed earlier in this batch.`
+            );
             continue;
+          }
+
           try {
             const headers: any = {
               "Content-Type": "application/json",
               "X-From-Sync": "true",
               "Sync-Id": sync_data.id,
             };
+
+            if (sync_data.unique_code) {
+              headers["X-Unique-Code"] = sync_data.unique_code;
+            }
 
             const payload = JSON.parse(sync_data.payload);
 
@@ -97,12 +120,14 @@ export const dataSyncBootFromCloud = async () => {
               validateStatus: (status) => status >= 200 && status < 300,
             });
           } catch (error: any) {
+            const errorMsg =
+              error.response?.data || error.message || "Unknown error";
             await axios.request({
               method: "PUT",
               url: `${config.SYNC_URL}/api/sync`,
               data: {
                 code: sync_data.id,
-                error: JSON.stringify(error.response?.data || "Unknown error"),
+                error: JSON.stringify(errorMsg),
               },
               headers: {
                 "Content-Type": "application/json",
@@ -110,13 +135,15 @@ export const dataSyncBootFromCloud = async () => {
               },
               validateStatus: (status) => status >= 200 && status < 300,
             });
-            if (unique_codes) failed_codes.push(...unique_codes);
+            if (unique_codes.length > 0) failed_codes.push(...unique_codes);
             continue;
           }
         }
       } catch (branchError: any) {
         console.error(`Error processing get dump data :`, branchError.message);
         // Continue with next branch even if current branch fails
+      } finally {
+        isSyncingFromCloud = false;
       }
     },
     "DATA_DUMP",
