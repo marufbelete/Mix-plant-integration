@@ -53,12 +53,12 @@ export const dataSyncBootFromCloud = async () => {
       isSyncingFromCloud = true;
 
       try {
-        const online = await isOnline();
-        if (!online) {
-          console.log("🚫 Internet not available. Skipping sync.");
-          return;
-        }
-        console.log("🚫 Internet .");
+        // const online = await isOnline();
+        // if (!online) {
+        //   console.log("🚫 Internet not available. Skipping sync.");
+        //   return;
+        // }
+        // console.log("🚫 Internet .");
 
         const cloud_data = await axios.request({
           method: "GET",
